@@ -1,0 +1,1 @@
+I have 1) a complete Ubuntu 20.04 LTS install ,and 2) I am ready to use Git and GitHub
