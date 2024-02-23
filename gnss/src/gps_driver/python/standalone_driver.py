@@ -50,8 +50,8 @@ def ReadFromSerial(serialPortAddr):
     return gpggaRead
 
 def main():
-    pub = rospy.Publisher('stand_alone_chatter', Customgps, queue_size=10)
     rospy.init_node('gps_driver', anonymous=True)
+    pub = rospy.Publisher('gps', Customgps, queue_size=10)
     port = rospy.get_param('~port', 'default_port_name')
     rate = rospy.Rate(1) # 1hz
     while not rospy.is_shutdown():
