@@ -13,10 +13,10 @@ def isGPGGAinString(inputString):
         return False
         
 def degMinstoDegDec(LatOrLong):
-    deg = float(str(LatOrLong)[:-7])
-    mins = str(LatOrLong)[-7:]
-    degDec = float(mins)/60
-    return (deg+degDec)
+    deg = int(LatOrLong//100)
+    mins = LatOrLong%100
+    degDec = deg+(mins/60)
+    return (degDec)
 
 def LatLongSignConvetion(LatOrLong, LatOrLongDir):
     if LatOrLongDir == "W" or LatOrLongDir == "S":
@@ -32,15 +32,20 @@ def convertToUTM(LatitudeSigned, LongitudeSigned):
     return [UTMEasting, UTMNorthing, UTMZone, UTMLetter]
 
 def UTCtoUTCEpoch(UTC):
-    local_time = time.localtime()
-    TimeSinceEpoch = time.mktime((local_time.tm_year, local_time.tm_mon, local_time.tm_mday, 0, 0, 0, local_time.tm_wday, local_time.tm_yday, local_time.tm_isdst)) #Replace with a 1-line method to get time since epoch in UTC
-    hour = int(str(UTC)[0:2]) 
+    utc_time_struct = time.gmtime()
+    
+    hour = int(str(UTC)[0:2])
     minute = int(str(UTC)[2:4])
     sec = float(str(UTC)[4:])
-    total_sec = hour*3600 + minute*60 + sec
-    CurrentTime = TimeSinceEpoch + total_sec
-    CurrentTimeSec = int(CurrentTime)
-    CurrentTimeNsec = int((CurrentTime - CurrentTimeSec)*10**9)
+    gpgga_seconds_since_midnight = hour * 3600 + minute * 60 + sec
+    
+    start_of_day_utc = time.mktime((utc_time_struct.tm_year, utc_time_struct.tm_mon, utc_time_struct.tm_mday, 0, 0, 0, 0, 0, 0))
+    
+    timestamp = start_of_day_utc + gpgga_seconds_since_midnight
+    
+    CurrentTimeSec = int(timestamp)
+    CurrentTimeNsec = int((timestamp - CurrentTimeSec) * 10**9)
+    
     return [CurrentTimeSec, CurrentTimeNsec]
 
 def ReadFromSerial(serialPortAddr):
@@ -55,9 +60,8 @@ def main():
     port = rospy.get_param('~port', 'default_port_name')
     rate = rospy.Rate(1) # 1hz
     while not rospy.is_shutdown():
-        hello = converter(port)
-        rospy.loginfo(hello)
-        pub.publish(hello)
+        gps = converter(port)
+        pub.publish(gps)
         rate.sleep()
 
 def converter(port):
@@ -77,7 +81,7 @@ def converter(port):
 
             Latitude = degMinstoDegDec(Latitude)
             Longitude = degMinstoDegDec(Longitude)
-
+            
             LatitudeSigned = LatLongSignConvetion(Latitude, LatitudeDir)
             LongitudeSigned = LatLongSignConvetion(Longitude, LongitudeDir)
 
@@ -89,8 +93,8 @@ def converter(port):
             msg.header.frame_id = "GPGGA"
             msg.header.stamp.secs = CurrentTime[0]
             msg.header.stamp.nsecs = CurrentTime[1]
-            msg.latitude = Latitude
-            msg.longitude = Longitude
+            msg.latitude = LatitudeSigned
+            msg.longitude = LongitudeSigned
             msg.altitude = 0
             msg.utm_easting = UTM[0]
             msg.utm_northing = UTM[1]
