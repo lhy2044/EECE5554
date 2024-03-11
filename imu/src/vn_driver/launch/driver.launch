@@ -1,5 +1,5 @@
 <launch>
-    <arg name="port" default="/dev/pts/4" />
+    <arg name="port" default="/dev/pts/2" />
 
     <node name="vn_driver" pkg="vn_driver" type="driver.py" output="screen">
         <param name="port" value="$(arg port)" />
